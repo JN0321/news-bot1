@@ -1,7 +1,6 @@
 import os
 import feedparser
 import requests
-import google.generativeai as genai
 from datetime import datetime, timedelta, timezone
 import time
 
@@ -50,8 +49,7 @@ def fetch_news():
 
 
 def summarize_with_gemini(articles):
-    genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-    model = genai.GenerativeModel("gemini-2.0-flash")
+    api_key = os.environ["GEMINI_API_KEY"]
 
     articles_text = "\n\n".join([
         f"【{a['source']}】{a['title']}\n{a['summary']}\n連結：{a['link']}"
@@ -72,8 +70,16 @@ def summarize_with_gemini(articles):
 新聞內容：
 {articles_text}
 """
-    response = model.generate_content(prompt)
-    return response.text
+
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}]
+    }
+
+    resp = requests.post(url, json=payload, timeout=60)
+    resp.raise_for_status()
+    data = resp.json()
+    return data["candidates"][0]["content"]["parts"][0]["text"]
 
 
 def send_telegram(text, token, chat_id):
@@ -102,7 +108,7 @@ def main():
     send_telegram(f"📰 台灣每日新聞摘要\n{today}\n\n整理中，請稍候...", token, chat_id)
 
     articles = fetch_news()
-    print(f"\n共抓到 {len(articles)} 則新聞，交給 Gemini 整理...")
+    print(f"\n共抓到 {len(articles)} 則，交給 Gemini 整理...")
 
     summary = summarize_with_gemini(articles)
     send_telegram(summary, token, chat_id)
