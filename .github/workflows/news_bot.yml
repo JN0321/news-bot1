@@ -14,7 +14,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: 安裝套件
-        run: pip install feedparser requests google-generativeai
+        run: run: pip install feedparser requests
       - name: 執行
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
